@@ -6,12 +6,12 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-API_TOKEN = '5838704651:AAGhIUuPpDzt059feiakFYhjlO5Qw1NPc5o'
+API_TOKEN = 'token'
 bot = telebot.TeleBot(API_TOKEN)
 
 # Connect to Google Sheets
 scope = ['https://www.googleapis.com/auth/spreadsheets', "https://www.googleapis.com/auth/drive"]
-credentials = ServiceAccountCredentials.from_json_keyfile_name("botzeno.json", scope)
+credentials = ServiceAccountCredentials.from_json_keyfile_name("keyfile.json", scope)
 client = gspread.authorize(credentials)
 sheet = client.open("NewDatabase").sheet1
 
@@ -57,7 +57,7 @@ def send_profiles(message):
     #update the sheet with the username and the command used
     sheet.update("A" + next_available_row(sheet, 4), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
 
-
+#creates inline keyboard
 def closet():
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
@@ -72,6 +72,7 @@ def show_shop(message):
     #update the sheet with the username and the command used
     sheet.update("A" + next_available_row(sheet, 4), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
 
+#handles inline keyboard
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     bot.answer_callback_query(call.id, "Felpa in arrivo")
@@ -113,7 +114,7 @@ def handle_message(message):
     sheet.update("F" + next_available_row(sheet, 9), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
 
 
-
+#handles every other message
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
     bot.reply_to(message, "Scusa non so ancora come rispondere a questo messaggio")
