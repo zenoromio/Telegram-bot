@@ -1,131 +1,45 @@
-import gspread
-import messages
-from oauth2client.service_account import ServiceAccountCredentials
-import random
-import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import links
 
-API_TOKEN = 'TOKEN'
-bot = telebot.TeleBot(API_TOKEN)
+#this whole block of code will open the url with selenium and extract the html with BeautifulSoup and store it inside the "soup" variable
+chrome_options = Options()  
+chrome_options.add_argument("--headless")
+chrome_options.add_argument('--no-sandbox')
+driver = webdriver.Chrome(options=chrome_options)
+driver.get(links.link11)
+soup = BeautifulSoup(driver.page_source, "html.parser")
+driver.close()
 
-# Connect to Google Sheets
-scope = ['https://www.googleapis.com/auth/spreadsheets', "https://www.googleapis.com/auth/drive"]
-credentials = ServiceAccountCredentials.from_json_keyfile_name("private_key.json", scope)
-client = gspread.authorize(credentials)
-sheet = client.open("spreadsheet_name").sheet1
+#these are the class names found inside the nike.com website
+shoes_name = "mt2-sm css-12whm6j"
+hoodies_man = "mt2-sm css-hzulvp"
+hoodies_woman ="mt2-sm css-1j3x2vp"
 
-
-# find first cell empty in a sheet column
-def next_available_row(worksheet, col):
-    str_list = list(filter(None, worksheet.col_values(col)))
-    return str(len(str_list)+1)
-
-
-# handles /start command
-@bot.message_handler(commands=['start'])
-def welcome_message(message):
-    bot.send_message(message.chat.id, messages.start_message, parse_mode="MarkdownV2")
-
-    #update the sheet with the username and the command used
-    sheet.update("A" + next_available_row(sheet, 4), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
+#find all element with class name (class name must match with selected link)
+sizes = soup.find("div", class_=hoodies_woman)
 
 
-# handles /stats command
-@bot.message_handler(commands=['stats'])
-def send_stats(message):
-    bot.send_message(message.chat.id, messages.stats_message, parse_mode="MarkdownV2")
+def find_sizes():
+    #get each size
+    size_array = sizes.find_all("div")
 
-    #update the sheet with the username and the command used
-    sheet.update("A" + next_available_row(sheet, 4), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
-
-
-# handles /zodiac command
-@bot.message_handler(commands=['zodiac'])
-def send_profiles(message):
-    bot.send_message(message.chat.id, messages.zodiac_message, parse_mode="MarkdownV2")
-
-    #update the sheet with the username and the command used
-    sheet.update("A" + next_available_row(sheet, 4), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
+    #print out each available size
+    for size in size_array:
+        #the unavailable shoes are marked with "disabled" in html file
+        if "disabled" not in str(size):
+            print(size.text) 
 
 
-# handles /social command
-@bot.message_handler(commands=['socials'])
-def send_profiles(message):
-    bot.send_message(message.chat.id, messages.social_message, parse_mode="MarkdownV2")
+def find_available_sizes():
+    #get each size
+    size_array = sizes.find_all("div")
 
-    #update the sheet with the username and the command used
-    sheet.update("A" + next_available_row(sheet, 4), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
-
-#creates custom inline keyboard
-def closet():
-    markup = InlineKeyboardMarkup()
-    markup.row_width = 2
-    markup.add(InlineKeyboardButton("Sferaebbasta", callback_data="Sfera"), InlineKeyboardButton("PallacanestroVicenza", callback_data="Basket"))
-    markup.add(InlineKeyboardButton("PaoloLioy", callback_data="Lioy"), InlineKeyboardButton("FootballUSA", callback_data="America"))
-    return markup
+    #print out each available size
+    for size in size_array:
+        print(size.text) 
 
 
-# handles /hoodies command
-@bot.message_handler(commands=['hoodies'])
-def show_shop(message):
-    bot.send_message(message.chat.id,"Benvenuto nell'armadio delle felpe di Zeno. Cosa vuoi vedere?",reply_markup=closet())
-
-    #update the sheet with the username and the command used
-    sheet.update("A" + next_available_row(sheet, 4), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
-
-
-#handles the inline keyboard
-@bot.callback_query_handler(func=lambda call: True)
-def callback_query(call):
-    bot.answer_callback_query(call.id, "Felpa in arrivo")
-    if call.data == "Sfera":
-        bot.send_photo(call.message.chat.id, open("zenos_hoodies/felpa1.jpeg", "rb"))
-        bot.send_message(call.message.chat.id, "Sferaebbasta $€ Purple x Zeno")
-    elif call.data == "Basket":
-        bot.send_photo(call.message.chat.id, open("zenos_hoodies/felpa2.jpeg", "rb"))
-        bot.send_message(call.message.chat.id, "Pallacanestro Vicenza 2012 x Zeno")
-    elif call.data == "Lioy":
-        bot.send_photo(call.message.chat.id, open("zenos_hoodies/felpa3.jpeg", "rb"))
-        bot.send_message(call.message.chat.id, "Lioy Beta Midnight Blue x Zeno")
-    elif call.data == "America":
-        bot.send_photo(call.message.chat.id, open("zenos_hoodies/felpa4.jpeg", "rb"))
-        bot.send_message(call.message.chat.id, "UME Eagle Football x ZenoMVP")
-    else:
-        bot.answer_callback_query(call.id, "Oh")
-
-
-# handles /cameraroll command
-@bot.message_handler(commands=['cameraroll'])
-def send_pic(message):
-    #generate random number for pic
-    rad_num = random.randint(1, 32)
-    bot.send_photo(message.chat.id, open("zenos_pics/" + str(rad_num) + ".jpeg", "rb"))
-    bot.send_message(message.chat.id, messages.captions[str(rad_num)])
-    bot.send_message(message.chat.id, "Molto bello vero? Premi /cameraroll per vedere un'altra foto random")
-    #update the sheet with the username and the command used
-    sheet.update("A" + next_available_row(sheet, 4), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
-
-
-# handles /message command
-@bot.message_handler(commands=['message'])
-def send_profiles(message):
-    bot.send_message(message.chat.id, "Scrivi un messaggio e firmati così so che sei passato/a⬇️⬇️⬇️")
-
-    #send user to use next function
-    bot.register_next_step_handler(message, handle_message)
-
-
-def handle_message(message):
-    bot.send_message(message.chat.id, "Grazie il tuo messaggio è stato ricevuto!")
-
-    #register message to the spreadsheet
-    sheet.update("F" + next_available_row(sheet, 9), [[message.from_user.first_name, message.from_user.last_name, message.from_user.username, message.text]])
-
-
-#handles all other messages
-@bot.message_handler(func=lambda message: True)
-def echo_message(message):
-    bot.reply_to(message, "Scusa non so ancora come rispondere a questo messaggio")
-
-
-bot.infinity_polling()
+find_sizes()
+find_available_sizes()
