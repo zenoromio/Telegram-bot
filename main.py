@@ -89,7 +89,7 @@ def callback_query(call):
         bot.send_photo(call.message.chat.id, open("zenos_hoodies/felpa4.jpeg", "rb"))
         bot.send_message(call.message.chat.id, "UME Eagle Football x ZenoMVP")
     else:
-        bot.answer_callback_query(call.id, "Nigga")
+        bot.answer_callback_query(call.id, "Impossible")
 
 @bot.message_handler(commands=['cameraroll'])
 def send_pic(message):
